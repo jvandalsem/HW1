@@ -6,12 +6,13 @@
 
 ## List below here, in a comment/comments, the people you worked with on this assignment AND any resources you used to find code (50 point deduction for not doing so). If none, write "None".
 
-
-
 ## [PROBLEM 1] - 150 points
 ## Below is code for one of the simplest possible Flask applications. Edit the code so that once you run this application locally and go to the URL 'http://localhost:5000/class', you see a page that says "Welcome to SI 364!"
 
-from flask import Flask
+from flask import Flask, render_template, request
+import json
+import requests
+import math
 app = Flask(__name__)
 app.debug = True
 
@@ -19,6 +20,73 @@ app.debug = True
 def hello_to_you():
     return 'Hello!'
 
+@app.route('/class')
+def class_welcome():
+    return 'Welcome to SI 364!'
+
+@app.route('/movie/<anytitlesearch>')
+def movie_search(anytitlesearch):
+    base_url = 'https://itunes.apple.com/search/'
+    p_dict = {}
+    p_dict['term'] = anytitlesearch
+    p_dict['entity'] = 'movie'
+    req = requests.get(base_url, params = p_dict)
+    response = json.loads(req.text)
+    return str(response)
+
+@app.route('/question')
+def formView():
+    html_form = '''
+    <html>
+    <body>
+    <form method ='GET' action ='http://localhost:5000/result'>
+    Please enter your favorite number:
+    <input type ='text' name='number'></input>
+    <input type ='submit' name ='submit'></input>
+    </form>
+    </body>
+    </html>
+    '''
+    return html_form
+
+@app.route('/result', methods = ['GET'])
+def resultView():
+    if request.method == 'GET':
+        num = request.args.get('number')
+        new_num = (int(num) * 2)
+        return str(new_num)
+    return 'Nothing was submitted!'
+
+
+@app.route('/problem4form', methods=['GET', 'POST'])
+def form2View():
+    html_form = '''<form action = '' method='GET'>
+    <b>MapQuest Route Timer</b><br><br>
+    <i>Enter in two locations and a mode of travel to see how long a trip will take. Enter in each city followed by a comma, space, and the state abbreviation. Example: 'Ann Arbor, MI'.</i><br>
+    <br>Origin City: <input type='text' name='origin' value = ''></input>
+    <br>Destination City: <input type='text' name='destination' value = ''></input>
+    <br>Mode of travel: <br>
+    <input type="radio" name="travelmode" value="fastest"> Driving<br>
+    <input type="radio" name="travelmode" value="pedestrian"> Walking<br>
+    <input type="radio" name="travelmode" value="bicycle"> Bicycling<br>
+    <input type="submit" value="Submit">
+    </form>'''
+
+    origin = request.args.get('origin','')
+    destination = request.args.get('destination','')
+    travelmode= request.args.get('travelmode', '')
+    base_url = 'http://www.mapquestapi.com/directions/v2/route'
+    mquest_api_key = 'Uo9k75ARnJUcjwzDDTKkXzEcPf3GLFpe'
+    mquest_params = {'key': mquest_api_key, 'from': origin , 'to': destination, 'routeType': travelmode}
+    if origin == '' or destination == '' or travelmode == '':
+        tresult = ''
+    else:
+        mquest_response = requests.get(base_url, params = mquest_params)
+        mquest_data = json.loads(mquest_response.text)
+        ttime = math.ceil((mquest_data['route']['realTime'])/60)
+        tresult = 'It will take approximately {} minutes to get from {} to {}.'.format(ttime, request.args.get('origin',''), request.args.get('destination',''))
+    if request.method == 'GET':
+        return html_form + '<br>{}'.format(tresult)
 
 if __name__ == '__main__':
     app.run()
@@ -28,7 +96,7 @@ if __name__ == '__main__':
 ## Edit the code chunk above again so that if you go to the URL 'http://localhost:5000/movie/<name-of-movie-here-one-word>' you see a big dictionary of data on the page. For example, if you go to the URL 'http://localhost:5000/movie/ratatouille', you should see something like the data shown in the included file sample_ratatouille_data.txt, which contains data about the animated movie Ratatouille. However, if you go to the url http://localhost:5000/movie/titanic, you should get different data, and if you go to the url 'http://localhost:5000/movie/dsagdsgskfsl' for example, you should see data on the page that looks like this:
 
 # {
-#  "resultCount":0,
+#  'resultCount":0,
 #  "results": []
 # }
 
